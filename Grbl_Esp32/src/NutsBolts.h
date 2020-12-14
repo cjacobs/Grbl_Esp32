@@ -22,26 +22,26 @@
 
 #include "Config.h"
 
-#define false 0
-#define true 1
+// #define false 0
+// #define true 1
 
-#define SOME_LARGE_VALUE 1.0E+38
+const double SOME_LARGE_VALUE = 1.0E+38;
 
 // Axis array index values. Must start with 0 and be continuous.
-// Note: You set the number of axes used by changing N_AXIS.
+// Note: You set the number of axes used by changing MAX_N_AXIS.
 // Be sure to define pins or servos in the machine definition file.
-#define X_AXIS 0  // Axis indexing value.
-#define Y_AXIS 1
-#define Z_AXIS 2
+const int X_AXIS = 0;  // Axis indexing value.
+const int Y_AXIS = 1;
+const int Z_AXIS = 2;
 #define A_AXIS 3
 #define B_AXIS 4
 #define C_AXIS 5
 
-#define MAX_AXES 6
-#define MAX_GANGED 2
+const int MAX_AXES   = 6;
+const int MAX_GANGED = 2;
 
-#define PRIMARY_MOTOR 0
-#define GANGED_MOTOR 1
+const int PRIMARY_MOTOR = 0;
+const int GANGED_MOTOR  = 1;
 
 #define X2_AXIS (X_AXIS + MAX_AXES)
 #define Y2_AXIS (Y_AXIS + MAX_AXES)
@@ -49,35 +49,37 @@
 #define A2_AXIS (A_AXIS + MAX_AXES)
 #define B2_AXIS (B_AXIS + MAX_AXES)
 #define C2_AXIS (C_AXIS + MAX_AXES)
-
-// CoreXY motor assignments. DO NOT ALTER.
-// NOTE: If the A and B motor axis bindings are changed, this effects the CoreXY equations.
-#define A_MOTOR X_AXIS  // Must be X_AXIS
-#define B_MOTOR Y_AXIS  // Must be Y_AXIS
+static inline int toMotor2(int axis) {
+    return axis + MAX_AXES;
+}
 
 // Conversions
-#define MM_PER_INCH (25.40)
-#define INCH_PER_MM (0.0393701)
-#define TICKS_PER_MICROSECOND (F_STEPPER_TIMER / 1000000)  // Different from AVR version
+const double MM_PER_INCH = (25.40);
+const double INCH_PER_MM = (0.0393701);
 
-#define DELAY_MODE_DWELL 0
-#define DELAY_MODE_SYS_SUSPEND 1
+const int DELAY_MODE_DWELL       = 0;
+const int DELAY_MODE_SYS_SUSPEND = 1;
 
 // Useful macros
 #define clear_vector(a) memset(a, 0, sizeof(a))
-#define clear_vector_float(a) memset(a, 0.0, sizeof(float) * N_AXIS)
-// #define clear_vector_long(a) memset(a, 0.0, sizeof(long)*N_AXIS)
+#define clear_vector_float(a) memset(a, 0.0, sizeof(float) * MAX_N_AXIS)
+// #define clear_vector_long(a) memset(a, 0.0, sizeof(long)*MAX_N_AXIS)
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))  // changed to upper case to remove conflicts with other libraries
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))  // changed to upper case to remove conflicts with other libraries
-#define isequal_position_vector(a, b) !(memcmp(a, b, sizeof(float) * N_AXIS))
+#define isequal_position_vector(a, b) !(memcmp(a, b, sizeof(float) * MAX_N_AXIS))
 
 // Bit field and masking macros
-//Arduino.h:104:0: note: this is the location of the previous definition
-//#define bit(n) (1 << n)
+// bit(n) is defined in Arduino.h.  We redefine it here so we can apply
+// the static_cast, thus making it work with scoped enums
+#undef bit
+#define bit(n) (1 << static_cast<unsigned int>(n))
+
 #define bit_true(x, mask) (x) |= (mask)
 #define bit_false(x, mask) (x) &= ~(mask)
 #define bit_istrue(x, mask) ((x & mask) != 0)
 #define bit_isfalse(x, mask) ((x & mask) == 0)
+#define bitnum_true(x, num) (x) |= bit(num)
+#define bitnum_istrue(x, num) ((x & bit(num)) != 0)
 
 // Read a floating point value from a string. Line points to the input buffer, char_counter
 // is the indexer pointing to the current character of the line, while float_ptr is
@@ -103,6 +105,8 @@ uint32_t map_uint32_t(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out
 float    constrain_float(float in, float min, float max);
 bool     char_is_numeric(char value);
 char*    trim(char* value);
+
+int numberOfSetBits(uint32_t i);
 
 template <class T>
 void swap(T& a, T& b) {

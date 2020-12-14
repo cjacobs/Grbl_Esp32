@@ -32,17 +32,23 @@
 #include "Config.h"
 
 // Some useful constants.
-#define DT_SEGMENT (1.0 / (ACCELERATION_TICKS_PER_SECOND * 60.0))  // min/segment
-#define REQ_MM_INCREMENT_SCALAR 1.25
-#define RAMP_ACCEL 0
-#define RAMP_CRUISE 1
-#define RAMP_DECEL 2
-#define RAMP_DECEL_OVERRIDE 3
+const double DT_SEGMENT              = (1.0 / (ACCELERATION_TICKS_PER_SECOND * 60.0));  // min/segment
+const double REQ_MM_INCREMENT_SCALAR = 1.25;
+const int    RAMP_ACCEL              = 0;
+const int    RAMP_CRUISE             = 1;
+const int    RAMP_DECEL              = 2;
+const int    RAMP_DECEL_OVERRIDE     = 3;
 
-#define PREP_FLAG_RECALCULATE bit(0)
-#define PREP_FLAG_HOLD_PARTIAL_BLOCK bit(1)
-#define PREP_FLAG_PARKING bit(2)
-#define PREP_FLAG_DECEL_OVERRIDE bit(3)
+struct PrepFlag {
+    uint8_t recalculate : 1;
+    uint8_t holdPartialBlock : 1;
+    uint8_t parking : 1;
+    uint8_t decelOverride : 1;
+};
+
+// fStepperTimer should be an integer divisor of the bus speed, i.e. of fTimers
+const uint32_t fStepperTimer = 20000000; // frequency of step pulse timer
+const int ticksPerMicrosecond = fStepperTimer / 1000000;
 
 // Define Adaptive Multi-Axis Step-Smoothing(AMASS) levels and cutoff frequencies. The highest level
 // frequency bin starts at 0Hz and ends at its cutoff frequency. The next lower level frequency bin
@@ -50,28 +56,20 @@
 // be considered carefully against how much it over-drives the stepper ISR, the accuracy of the 16-bit
 // timer, and the CPU overhead. Level 0 (no AMASS, normal operation) frequency bin starts at the
 // Level 1 cutoff frequency and up to as fast as the CPU allows (over 30kHz in limited testing).
+// For efficient computation, each cutoff frequency is twice the previous one.
 // NOTE: AMASS cutoff frequency multiplied by ISR overdrive factor must not exceed maximum step frequency.
 // NOTE: Current settings are set to overdrive the ISR to no more than 16kHz, balancing CPU overhead
 // and timer accuracy.  Do not alter these settings unless you know what you are doing.
-///#ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
-#define MAX_AMASS_LEVEL 3
-// AMASS_LEVEL0: Normal operation. No AMASS. No upper cutoff frequency. Starts at LEVEL1 cutoff frequency.
-// Note ESP32 use F_STEPPER_TIMER rather than the AVR F_CPU
-#define AMASS_LEVEL1 (F_STEPPER_TIMER / 8000)  // Over-drives ISR (x2). Defined as F_CPU/(Cutoff frequency in Hz)
-#define AMASS_LEVEL2 (F_STEPPER_TIMER / 4000)  // Over-drives ISR (x4)
-#define AMASS_LEVEL3 (F_STEPPER_TIMER / 2000)  // Over-drives ISR (x8)
 
-#if MAX_AMASS_LEVEL <= 0
-error "AMASS must have 1 or more levels to operate correctly."
-#endif
-//#endif
+const uint32_t amassThreshold = fStepperTimer / 8000;
+const int maxAmassLevel = 3;  // Each level increase doubles the threshold
 
-#define STEP_TIMER_GROUP TIMER_GROUP_0
-#define STEP_TIMER_INDEX TIMER_0
+const timer_group_t STEP_TIMER_GROUP = TIMER_GROUP_0;
+const timer_idx_t   STEP_TIMER_INDEX = TIMER_0;
 
-    // esp32 work around for diable in main loop
-    extern uint64_t stepper_idle_counter;
-extern bool         stepper_idle;
+// esp32 work around for diable in main loop
+extern uint64_t stepper_idle_counter;
+extern bool     stepper_idle;
 
 //extern uint8_t ganged_mode;
 
@@ -81,6 +79,17 @@ enum stepper_id_t {
     ST_I2S_STREAM,
     ST_I2S_STATIC,
 };
+
+#ifndef DEFAULT_STEPPER
+#    if defined(USE_I2S_STEPS)
+#        define DEFAULT_STEPPER ST_I2S_STREAM
+#    elif defined(USE_RMT_STEPS)
+#        define DEFAULT_STEPPER ST_RMT
+#    else
+#        define DEFAULT_STEPPER ST_TIMED
+#    endif
+#endif
+
 extern const char*  stepper_names[];
 extern stepper_id_t current_stepper;
 
@@ -96,9 +105,6 @@ void st_wake_up();
 
 // Immediately disables steppers
 void st_go_idle();
-
-// Generate the step and direction port invert masks.
-void st_generate_step_dir_invert_masks();
 
 // Reset the stepper subsystem variables
 void st_reset();
@@ -124,7 +130,7 @@ bool get_stepper_disable();  // returns the state of the pin
 void set_stepper_pins_on(uint8_t onMask);
 void set_direction_pins_on(uint8_t onMask);
 
-void Stepper_Timer_WritePeriod(uint64_t alarm_val);
+void Stepper_Timer_WritePeriod(uint16_t timerTicks);
 void Stepper_Timer_Init();
 void Stepper_Timer_Start();
 void Stepper_Timer_Stop();

@@ -130,37 +130,16 @@
 // === Servos
 // To use a servo motor on an axis, do not define step and direction
 // pins for that axis, but instead include a block like this:
-// #define USE_SERVO_AXES
 
 // #define SERVO_Z_PIN             GPIO_NUM_22
-// #define SERVO_Z_RANGE_MIN       0.0
-// #define SERVO_Z_RANGE_MAX       5.0
-// #define SERVO_Z_HOMING_TYPE     SERVO_HOMING_TARGET // during homing it will instantly move to a target value
-// #define SERVO_Z_HOME_POS        SERVO_Z_RANGE_MAX // move to max during homing
-// #define SERVO_Z_MPOS            false           // will not use mpos, uses work coordinates
 
 // === Homing cycles
-// The default homing order is Z first (HOMING_CYCLE_0),
-// then X (HOMING_CYCLE_1), and finally Y (HOMING_CYCLE_2)
-// For machines that need different homing order, you can
-// undefine HOMING_CYCLE_n and redefine it accordingly.
-// For example, the following would first home X and Y
-// simultaneously, then A and B simultaneously, and Z
-// not at all.
-
-// #undef HOMING_CYCLE_0
-// #define HOMING_CYCLE_0 (bit(X_AXIS)|bit(Y_AXIS))
-
-// #undef HOMING_CYCLE_1
-// #define HOMING_CYCLE_1 (bit(A_AXIS)|bit(B_AXIS))
-
-// #undef HOMING_CYCLE_2
-// #endif
+// Set them using $Homing/Cycle0= optionally up to $Homing/Cycle5=
 
 // === Default settings
 // Grbl has many run-time settings that the user can changed by
-// commands like $110=2000 .  Their values are stored in EEPROM
-// so they persist after the controller has been powered down.
+// commands like $110=2000 .  Their values are stored in non-volatile
+// storage so they persist after the controller has been powered down.
 // Those settings have default values that are used if the user
 // has not altered them, or if the settings are explicitly reset
 // to the default values wth $RST=$.
@@ -203,7 +182,7 @@
 // functions.  custom_code_template.cpp describes the functions
 // that you can implement.  The ifdef guards are described below:
 //
-// USE_CUSTOM_HOMING enables the user_defined_homing() function
+// USE_CUSTOM_HOMING enables the user_defined_homing(uint8_t cycle_mask) function
 // that can implement an arbitrary homing sequence.
 // #define USE_CUSTOM_HOMING
 
@@ -212,10 +191,10 @@
 // so non-Cartesian machines can be implemented.
 // #define USE_KINEMATICS
 
-// USE_FWD_KINEMATIC enables the forward_kinematics() function
+// USE_FWD_KINEMATICS enables the forward_kinematics() function
 // that converts motor positions in non-Cartesian coordinate
 // systems back to Cartesian form, for status reports.
-//#define USE_FWD_KINEMATIC
+//#define USE_FWD_KINEMATICS
 
 // USE_TOOL_CHANGE enables the user_tool_change() function
 // that implements custom tool change procedures.

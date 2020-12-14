@@ -25,9 +25,17 @@
     along with Grbl_ESP32.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define MACHINE_NAME "MIDTBOT"
+#define MACHINE_NAME "midTbot"
 
-#define SPINDLE_TYPE    SPINDLE_TYPE_NONE
+#define CUSTOM_CODE_FILENAME    "../Custom/CoreXY.cpp"
+
+#define MIDTBOT             // applies the geometry correction to the kinematics 
+#define USE_KINEMATICS      // there are kinematic equations for this machine
+#define USE_FWD_KINEMATICS  // report in cartesian
+#define USE_MACHINE_INIT    // There is some custom initialization for this machine
+#define USE_CUSTOM_HOMING
+
+#define SPINDLE_TYPE    SpindleType::NONE
 
 #define X_STEP_PIN      GPIO_NUM_12
 #define Y_STEP_PIN      GPIO_NUM_14
@@ -35,41 +43,24 @@
 #define X_DIRECTION_PIN GPIO_NUM_26
 #define Y_DIRECTION_PIN GPIO_NUM_25
 
-#ifndef COREXY // maybe set in config.h
-    #define COREXY
-#endif
-
 #define STEPPERS_DISABLE_PIN GPIO_NUM_13
 
 #define X_LIMIT_PIN     GPIO_NUM_2
 #define Y_LIMIT_PIN     GPIO_NUM_4
 
 #define Z_SERVO_PIN             GPIO_NUM_27
-#define Z_SERVO_RANGE_MIN       0.0
-#define Z_SERVO_RANGE_MAX       5.0
 
-// redefine some stuff from config.h
-#ifdef HOMING_CYCLE_0
-    #undef HOMING_CYCLE_0
-#endif
+// Set $Homing/Cycle0=Y and $Homing/Cycle1=X
 
-#define HOMING_CYCLE_0 bit(Y_AXIS)
-
-#ifdef HOMING_CYCLE_1
-    #undef HOMING_CYCLE_1
-#endif
-
-#define HOMING_CYCLE_1 bit(X_AXIS)
-
-#ifdef HOMING_CYCLE_2
-    #undef HOMING_CYCLE_2
-#endif
-
-#define SERVO_PEN_PIN           GPIO_NUM_27
-
-#define SPINDLE_TYPE SPINDLE_TYPE_NONE
+#define SPINDLE_TYPE SpindleType::NONE
 
 // defaults
+#define DEFAULT_HOMING_CYCLE_0      bit(Z_AXIS)
+#define DEFAULT_HOMING_CYCLE_1      bit(Y_AXIS)
+#define DEFAULT_HOMING_CYCLE_2      bit(X_AXIS)
+
+#define DEFAULT_HOMING_DIR_MASK     (bit(X_AXIS) | bit (Z_AXIS)) // these home negative
+
 #define DEFAULT_STEP_PULSE_MICROSECONDS 3
 #define DEFAULT_STEPPER_IDLE_LOCK_TIME  255 // stay on
 
@@ -89,13 +80,12 @@
 #define DEFAULT_HARD_LIMIT_ENABLE 0  // false
 
 #define DEFAULT_HOMING_ENABLE           1
-#define DEFAULT_HOMING_DIR_MASK         1
-#define DEFAULT_HOMING_FEED_RATE        200.0 // mm/min
-#define DEFAULT_HOMING_SEEK_RATE        1000.0 // mm/min
+#define DEFAULT_HOMING_FEED_RATE        500.0 // mm/min
+#define DEFAULT_HOMING_SEEK_RATE        2000.0 // mm/min
 #define DEFAULT_HOMING_DEBOUNCE_DELAY   250 // msec (0-65k)
 #define DEFAULT_HOMING_PULLOFF          3.0 // mm
 
-#define DEFAULT_X_STEPS_PER_MM 200.0
+#define DEFAULT_X_STEPS_PER_MM 100.0
 #define DEFAULT_Y_STEPS_PER_MM 100.0
 #define DEFAULT_Z_STEPS_PER_MM 100.0 // This is percent in servo mode
 
@@ -109,4 +99,8 @@
 
 #define DEFAULT_X_MAX_TRAVEL 100.0 // mm NOTE: Must be a positive value.
 #define DEFAULT_Y_MAX_TRAVEL 100.0 // mm NOTE: Must be a positive value.
-#define DEFAULT_Z_MAX_TRAVEL 100.0 // This is percent in servo mode
+#define DEFAULT_Z_MAX_TRAVEL 5.0 // This is percent in servo mode
+
+#define DEFAULT_X_HOMING_MPOS DEFAULT_Z_MAX_TRAVEL // stays up after homing
+
+
